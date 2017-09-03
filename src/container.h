@@ -51,9 +51,9 @@ class ContainerIterator
 class Container : public Item, public Cylinder
 {
 	public:
-		explicit Container(uint16_t type);
-		Container(uint16_t type, uint16_t size, bool unlocked = true, bool pagination = false);
-		explicit Container(Tile* type);
+		explicit Container(uint16_t _type);
+		Container(uint16_t _type, uint16_t _size);
+		explicit Container(Tile* tile);
 		~Container();
 
 		// non-copyable
@@ -77,19 +77,19 @@ class Container : public Item, public Cylinder
 		}
 
 		virtual RewardChest* getRewardChest() {
-			return nullptr;
-		}
-		virtual const RewardChest* getRewardChest() const {
-			return nullptr;
-		}
-
-		virtual Reward* getReward() {
-			return nullptr;
-		}
-		virtual const Reward* getReward() const {
-			return nullptr;
-		}
-		
+ 			return nullptr;
+ 		}
+ 		virtual const RewardChest* getRewardChest() const {
+ 			return nullptr;
+ 		}
+ 
+ 		virtual Reward* getReward() {
+ 			return nullptr;
+ 		}
+ 		virtual const Reward* getReward() const {
+ 			return nullptr;
+ 		}
+ 
 		Attr_ReadValue readAttr(AttrTypes_t attr, PropStream& propStream) override;
 		bool unserializeItemNode(FileLoader& f, NODE node, PropStream& propStream) override;
 		std::string getContentDescription() const;

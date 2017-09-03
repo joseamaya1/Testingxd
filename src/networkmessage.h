@@ -132,6 +132,10 @@ class NetworkMessage
 			return position;
 		}
 
+		void setBufferPosition(MsgSize_t pos) {
+			position = pos;
+		}
+
 		uint16_t getLengthHeader() const {
 			return static_cast<uint16_t>(buffer[0] | buffer[1] << 8);
 		}

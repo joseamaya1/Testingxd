@@ -34,9 +34,9 @@ extern Actions* g_actions;
 extern ConfigManager g_config;
 
 Actions::Actions() :
-	scriptInterface("Action Interface")
+	m_scriptInterface("Action Interface")
 {
-	scriptInterface.initState();
+	m_scriptInterface.initState();
 }
 
 Actions::~Actions()
@@ -64,12 +64,12 @@ void Actions::clear()
 	clearMap(uniqueItemMap);
 	clearMap(actionItemMap);
 
-	scriptInterface.reInitState();
+	m_scriptInterface.reInitState();
 }
 
 LuaScriptInterface& Actions::getScriptInterface()
 {
-	return scriptInterface;
+	return m_scriptInterface;
 }
 
 std::string Actions::getScriptBaseName() const
@@ -82,7 +82,7 @@ Event* Actions::getEvent(const std::string& nodeName)
 	if (strcasecmp(nodeName.c_str(), "action") != 0) {
 		return nullptr;
 	}
-	return new Action(&scriptInterface);
+	return new Action(&m_scriptInterface);
 }
 
 bool Actions::registerEvent(Event* event, const pugi::xml_node& node)
@@ -264,7 +264,11 @@ Action* Actions::getAction(const Item* item)
 	}
 
 	//rune items
-	return g_spells->getRuneSpell(item->getID());
+	Action* runeSpell = g_spells->getRuneSpell(item->getID());
+	if (runeSpell) {
+		return runeSpell;
+	}
+	return nullptr;
 }
 
 ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_t index, Item* item, bool isHotkey)
@@ -280,10 +284,6 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 		if (action->isScripted()) {
 			if (action->executeUse(player, item, pos, nullptr, pos, isHotkey)) {
 				return RETURNVALUE_NOERROR;
-			}
-
-			if (item->isRemoved()) {
-				return RETURNVALUE_CANNOTUSETHISOBJECT;
 			}
 		} else if (action->function) {
 			if (action->function(player, item, pos, nullptr, pos, isHotkey)) {
@@ -319,37 +319,37 @@ ReturnValue Actions::internalUseItem(Player* player, const Position& pos, uint8_
 		}
 
 		//reward chest
-		if (container->getRewardChest()) {
-			RewardChest* myRewardChest = player->getRewardChest();
-			if (myRewardChest->size() == 0) {
-				return RETURNVALUE_REWARDCHESTISEMPTY;
-			}
-			
-			myRewardChest->setParent(container->getParent()->getTile());
-			for (auto& it : player->rewardMap) {
-				it.second->setParent(myRewardChest);
-			}
-
-				openContainer = myRewardChest;
-		}
-
-		//reward container proxy created when the boss dies
-		if (container->getID() == ITEM_REWARD_CONTAINER && !container->getReward()) {
-			if (Reward* reward = player->getReward(container->getIntAttr(ITEM_ATTRIBUTE_DATE), false)) {
-				reward->setParent(container->getRealParent());
-				openContainer = reward;
-			} else {
-				return RETURNVALUE_THISISIMPOSSIBLE;
-			}
-		}
-		
+ 		if (container->getRewardChest()) {
+ 			RewardChest* myRewardChest = player->getRewardChest();
+ 			if (myRewardChest->size() == 0) {
+ 				return RETURNVALUE_REWARDCHESTISEMPTY;
+ 			}
+ 
+ 			myRewardChest->setParent(container->getParent()->getTile());
+ 			for (auto& it : player->rewardMap) {
+ 				it.second->setParent(myRewardChest);
+ 			}
+ 
+ 			openContainer = myRewardChest;
+ 		}
+ 
+ 		//reward container proxy created when the boss dies
+ 		if (container->getID() == ITEM_REWARD_CONTAINER && !container->getReward()) {
+ 			if (Reward* reward = player->getReward(container->getIntAttr(ITEM_ATTRIBUTE_DATE), false)) {
+ 				reward->setParent(container->getRealParent());
+ 				openContainer = reward;
+ 			} else {
+ 				return RETURNVALUE_THISISIMPOSSIBLE; 
+ 			}
+ 		}		
+ 
 		uint32_t corpseOwner = container->getCorpseOwner();
 		if (container->isRewardCorpse()) {
-				//only players who participated in the fight can open the corpse
-				if (!player->getReward(container->getIntAttr(ITEM_ATTRIBUTE_DATE), false)) {
-				return RETURNVALUE_YOUARENOTTHEOWNER;
-			}
-		} else if (corpseOwner != 0 && !player->canOpenCorpse(corpseOwner)) {
+ 			//only players who participated in the fight can open the corpse
+ 			if (!player->getReward(container->getIntAttr(ITEM_ATTRIBUTE_DATE), false)) {
+ 				return RETURNVALUE_YOUARENOTTHEOWNER;
+ 			}			
+ 		} else if (corpseOwner != 0 && !player->canOpenCorpse(corpseOwner)) {
 			return RETURNVALUE_YOUARENOTTHEOWNER;
 		}
 
@@ -445,11 +445,23 @@ void Actions::showUseHotkeyMessage(Player* player, const Item* item, uint32_t co
 	player->sendTextMessage(MESSAGE_INFO_DESCR, ss.str());
 }
 
-Action::Action(LuaScriptInterface* interface) :
-	Event(interface), function(nullptr), allowFarUse(false), checkFloor(true), checkLineOfSight(true) {}
+Action::Action(LuaScriptInterface* _interface) :
+	Event(_interface)
+{
+	allowFarUse = false;
+	checkFloor = true;
+	checkLineOfSight = true;
+	function = nullptr;
+}
 
 Action::Action(const Action* copy) :
-	Event(copy), function(copy->function), allowFarUse(copy->allowFarUse), checkFloor(copy->checkFloor), checkLineOfSight(copy->checkLineOfSight) {}
+	Event(copy)
+{
+	allowFarUse = copy->allowFarUse;
+	checkFloor = copy->checkFloor;
+	checkLineOfSight = copy->checkLineOfSight;
+	function = copy->function;
+}
 
 bool Action::configureEvent(const pugi::xml_node& node)
 {
@@ -485,7 +497,7 @@ bool Action::loadFunction(const pugi::xml_attribute& attr)
 		return false;
 	}
 
-	scripted = false;
+	m_scripted = false;
 	return true;
 }
 
@@ -536,17 +548,17 @@ Thing* Action::getTarget(Player* player, Creature* targetCreature, const Positio
 bool Action::executeUse(Player* player, Item* item, const Position& fromPos, Thing* target, const Position& toPos, bool isHotkey)
 {
 	//onUse(player, item, fromPosition, target, toPosition, isHotkey)
-	if (!scriptInterface->reserveScriptEnv()) {
+	if (!m_scriptInterface->reserveScriptEnv()) {
 		std::cout << "[Error - Action::executeUse] Call stack overflow" << std::endl;
 		return false;
 	}
 
-	ScriptEnvironment* env = scriptInterface->getScriptEnv();
-	env->setScriptId(scriptId, scriptInterface);
+	ScriptEnvironment* env = m_scriptInterface->getScriptEnv();
+	env->setScriptId(m_scriptId, m_scriptInterface);
 
-	lua_State* L = scriptInterface->getLuaState();
+	lua_State* L = m_scriptInterface->getLuaState();
 
-	scriptInterface->pushFunction(scriptId);
+	m_scriptInterface->pushFunction(m_scriptId);
 
 	LuaScriptInterface::pushUserdata<Player>(L, player);
 	LuaScriptInterface::setMetatable(L, -1, "Player");
@@ -558,5 +570,5 @@ bool Action::executeUse(Player* player, Item* item, const Position& fromPos, Thi
 	LuaScriptInterface::pushPosition(L, toPos);
 
 	LuaScriptInterface::pushBoolean(L, isHotkey);
-	return scriptInterface->callFunction(6);
+	return m_scriptInterface->callFunction(6);
 }

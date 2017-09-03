@@ -103,7 +103,7 @@ enum CreatureType_t : uint8_t {
 
 enum OperatingSystem_t : uint8_t {
 	CLIENTOS_NONE = 0,
-
+	
 	CLIENTOS_LINUX = 1,
 	CLIENTOS_WINDOWS = 2,
 	CLIENTOS_FLASH = 3,
@@ -119,6 +119,26 @@ enum SpellGroup_t : uint8_t {
 	SPELLGROUP_HEALING = 2,
 	SPELLGROUP_SUPPORT = 3,
 	SPELLGROUP_SPECIAL = 4,
+};
+
+enum StoreOfferState_t : uint8_t {
+	STORE_OFFERSTATE_NONE = 0,
+	STORE_OFFERSTATE_NEW = 1,
+	STORE_OFFERSTATE_SALE = 2,
+	STORE_OFFERSTATE_TIMED = 3,
+};
+
+enum StoreOfferType_t : uint8_t {
+	STORE_OFFERTYPE_OTHER = 0,
+	STORE_OFFERTYPE_NAMECHANGE = 1,
+};
+
+enum StoreError_t : uint8_t {
+	STORE_ERROR_PURCHASE = 0,
+	STORE_ERROR_NETWORK = 1,
+	STORE_ERROR_HISTORY = 2,
+	STORE_ERROR_TRANSFER = 3,
+	STORE_ERROR_INFORMATION = 4,
 };
 
 enum AccountType_t : uint8_t {
@@ -249,17 +269,15 @@ enum skills_t : uint8_t {
 	SKILL_LAST = SKILL_FISHING
 };
 
-enum skillsStats_t : uint8_t {
-	SKILL_FIGHTFIST = 0,
-	SKILL_CRITICAL_HIT_CHANCE = 1,
-	SKILL_CRITICAL_HIT_DAMAGE = 2,
-	SKILL_LIFE_LEECH_CHANCE = 3,
-	SKILL_LIFE_LEECH_AMOUNT = 4,
-	SKILL_MANA_LEECH_CHANCE = 5,
-	SKILL_MANA_LEECH_AMOUNT = 6,
-
-	SKILL_STATS_FIRST = SKILL_FIGHTFIST,
-	SKILL_STATS_LAST = SKILL_MANA_LEECH_AMOUNT
+enum skillStats_t : uint8_t {
+	SKILL_CRITICAL_HIT_CHANCE = 19,
+	SKILL_CRITICAL_HIT_DAMAGE,
+	SKILL_LIFE_LEECH_CHANCE,
+	SKILL_LIFE_LEECH_AMOUNT,
+	SKILL_MANA_LEECH_CHANCE,
+	SKILL_MANA_LEECH_AMOUNT,
+	SKILLSTAT_FIRST = SKILL_CRITICAL_HIT_CHANCE,
+	SKILLSTAT_LAST = SKILL_MANA_LEECH_AMOUNT
 };
 
 enum stats_t {
@@ -465,10 +483,16 @@ struct Outfit_t {
 };
 
 struct LightInfo {
-	uint8_t level = 0;
-	uint8_t color = 0;
-	LightInfo() = default;
-	LightInfo(uint8_t level, uint8_t color) : level(level), color(color) {}
+	uint8_t level;
+	uint8_t color;
+	LightInfo() {
+		level = 0;
+		color = 0;
+	}
+	LightInfo(uint8_t _level, uint8_t _color) {
+		level = _level;
+		color = _color;
+	}
 };
 
 struct ShopInfo {
@@ -567,11 +591,14 @@ struct CombatDamage
 	} primary, secondary;
 
 	CombatOrigin origin;
+	bool critical;
+	
 	CombatDamage()
 	{
 		origin = ORIGIN_NONE;
 		primary.type = secondary.type = COMBAT_NONE;
 		primary.value = secondary.value = 0;
+		critical = false;
 	}
 };
 

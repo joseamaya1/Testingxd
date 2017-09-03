@@ -1,6 +1,6 @@
 /**
  * The Forgotten Server - a free and open-source MMORPG server emulator
- * Copyright (C) 2016  Mark Samman <mark.samman@gmail.com>
+ * Copyright (C) 2015  Mark Samman <mark.samman@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,9 @@
 #define STATUS_SERVER_VERSION "1.2"
 #define STATUS_SERVER_DEVELOPERS "Mark Samman"
 
-#define CLIENT_VERSION_MIN 1095
-#define CLIENT_VERSION_MAX 1095
-#define CLIENT_VERSION_STR "10.95"
-
-#define AUTHENTICATOR_DIGITS 6U
-#define AUTHENTICATOR_PERIOD 30U
+#define CLIENT_VERSION_MIN 1094
+#define CLIENT_VERSION_MAX 1096 
+#define CLIENT_VERSION_STR "10.96"
 
 #ifndef __FUNCTION__
 #define __FUNCTION__ __func__

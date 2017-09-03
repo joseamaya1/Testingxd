@@ -200,8 +200,8 @@ bool IOMap::loadMap(Map* map, const std::string& identifier)
 			}
 
 			uint16_t base_x = area_coord.x;
-			uint16_t base_y = area_coord.y;
-			uint16_t z = area_coord.z;
+ 			uint16_t base_y = area_coord.y;
+ 			uint16_t z = area_coord.z;
 
 			NODE nodeTile = f.getChildNode(nodeMapData, type);
 			while (nodeTile != NO_NODE) {
@@ -227,7 +227,7 @@ bool IOMap::loadMap(Map* map, const std::string& identifier)
 				}
 
 				uint16_t x = base_x + tile_coord.x;
-				uint16_t y = base_y + tile_coord.y;
+ 				uint16_t y = base_y + tile_coord.y;
 
 				bool isHouseTile = false;
 				House* house = nullptr;
