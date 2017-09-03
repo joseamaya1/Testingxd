@@ -332,6 +332,7 @@ class Game
 		void playerMoveItemByPlayerID(uint32_t playerId, const Position& fromPos, uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count);
 		void playerMoveItem(Player* player, const Position& fromPos,
 		                    uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count, Item* item, Cylinder* toCylinder);
+		void playerEquipItem(uint32_t playerId, uint16_t spriteId);
 		void playerMove(uint32_t playerId, Direction direction);
 		void playerCreatePrivateChannel(uint32_t playerId);
 		void playerChannelInvite(uint32_t playerId, const std::string& name);
@@ -399,9 +400,12 @@ class Game
 		void playerCancelMarketOffer(uint32_t playerId, uint32_t timestamp, uint16_t counter);
 		void playerAcceptMarketOffer(uint32_t playerId, uint32_t timestamp, uint16_t counter, uint16_t amount);
 
+		void playerPurchaseStoreOffer(uint32_t playerId, uint32_t offerId, const std::string& param);
+		void playerTransferCoins(uint32_t playerId, const std::string& recipient, uint16_t amount);
+
 		void parsePlayerExtendedOpcode(uint32_t playerId, uint8_t opcode, const std::string& buffer);
 
-		std::forward_list<Item*> getMarketItemList(uint16_t wareId, uint16_t sufficientCount, DepotLocker* depotLocker);
+		std::forward_list<Item*> getMarketItemList(uint16_t wareId, uint16_t sufficientCount, Container* depotChest, Inbox* inbox);
 
 		static void updatePremium(Account& account);
 
@@ -440,7 +444,7 @@ class Game
 		void combatGetTypeInfo(CombatType_t combatType, Creature* target, TextColor_t& color, uint8_t& effect);
 
 		bool combatChangeHealth(Creature* attacker, Creature* target, CombatDamage& damage);
-		bool combatChangeMana(Creature* attacker, Creature* target, int32_t manaChange, CombatOrigin origin);
+		bool combatChangeMana(Creature* attacker, Creature* target, int32_t manaChange, CombatOrigin origin, bool critical = false);
 
 		//animation help functions
 		void addCreatureHealth(const Creature* target);
@@ -471,6 +475,7 @@ class Game
 
 		const std::unordered_map<uint32_t, Player*>& getPlayers() const { return players; }
 		const std::map<uint32_t, Npc*>& getNpcs() const { return npcs; }
+		const std::map<uint32_t, Monster*>& getMonsters() const { return monsters; }
 
 		void addPlayer(Player* player);
 		void removePlayer(Player* player);

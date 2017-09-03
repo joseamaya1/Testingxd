@@ -22,8 +22,10 @@
 #include "guild.h"
 
 #include "game.h"
+#include "databasetasks.h"
 
 extern Game g_game;
+extern DatabaseTasks g_databaseTasks;
 
 void Guild::addMember(Player* player)
 {
@@ -42,6 +44,9 @@ void Guild::removeMember(Player* player)
 	g_game.updatePlayerHelpers(*player);
 
 	if (membersOnline.empty()) {
+		std::ostringstream query;
+    query << "UPDATE `guilds` SET `balance` = " << balance << " WHERE `id` = " << id;
+    g_databaseTasks.addTask(query.str());
 		g_game.removeGuild(id);
 		delete this;
 	}

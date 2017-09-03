@@ -34,26 +34,26 @@ extern MoveEvents* g_moveEvents;
 extern Weapons* g_weapons;
 
 ItemType::ItemType() :
-	group(ITEM_GROUP_NONE), type(ITEM_TYPE_NONE), id(0), clientId(0),
-	stackable(false), isAnimation(false), weight(0), levelDoor(0), decayTime(0),
-	wieldInfo(0), minReqLevel(0), minReqMagicLevel(0), charges(0), maxHitChance(-1),
-	decayTo(-1), attack(0), defense(0), extraDefense(0), armor(0), rotateTo(0),
-	runeMagLevel(0), runeLevel(0), combatType(COMBAT_NONE), transformToOnUse(),
-	transformToFree(0), destroyTo(0), maxTextLen(0), writeOnceItemId(0),
-	transformEquipTo(0), transformDeEquipTo(0), maxItems(8), slotPosition(SLOTP_HAND),
-	speed(0), wareId(0), magicEffect(CONST_ME_NONE), bedPartnerDir(DIRECTION_NONE),
-	weaponType(WEAPON_NONE), ammoType(AMMO_NONE), shootType(CONST_ANI_NONE),
-	corpseType(RACE_NONE), fluidSource(FLUID_NONE), floorChange(0),
-	alwaysOnTopOrder(0), lightLevel(0), lightColor(0), shootRange(1), hitChance(0),
-	forceUse(false), hasHeight(false), walkStack(true), blockSolid(false),
-	blockPickupable(false), blockProjectile(false), blockPathFind(false),
-	allowPickupable(false), showDuration(false), showCharges(false),
-	showAttributes(false), replaceable(true), pickupable(false), rotatable(false),
-	useable(false), moveable(false), alwaysOnTop(false), canReadText(false),
-	canWriteText(false), isVertical(false), isHorizontal(false), isHangable(false),
-	allowDistRead(false), lookThrough(false), stopTime(false), showCount(true)
+ 	group(ITEM_GROUP_NONE), type(ITEM_TYPE_NONE), id(0), clientId(0),
+ 	stackable(false), isAnimation(false), weight(0), levelDoor(0), decayTime(0),
+ 	wieldInfo(0), minReqLevel(0), minReqMagicLevel(0), charges(0), maxHitChance(-1),
+ 	decayTo(-1), attack(0), defense(0), extraDefense(0), armor(0), rotateTo(0),
+ 	runeMagLevel(0), runeLevel(0), combatType(COMBAT_NONE), transformToOnUse(),
+ 	transformToFree(0), destroyTo(0), maxTextLen(0), writeOnceItemId(0),
+ 	transformEquipTo(0), transformDeEquipTo(0), maxItems(8), slotPosition(SLOTP_HAND),
+ 	speed(0), wareId(0), magicEffect(CONST_ME_NONE), bedPartnerDir(DIRECTION_NONE),
+ 	weaponType(WEAPON_NONE), ammoType(AMMO_NONE), shootType(CONST_ANI_NONE),
+ 	corpseType(RACE_NONE), fluidSource(FLUID_NONE), floorChange(0),
+ 	alwaysOnTopOrder(0), lightLevel(0), lightColor(0), shootRange(1), hitChance(0),
+ 	forceUse(false), hasHeight(false), walkStack(true), blockSolid(false),
+ 	blockPickupable(false), blockProjectile(false), blockPathFind(false),
+ 	allowPickupable(false), showDuration(false), showCharges(false),
+ 	showAttributes(false), replaceable(true), pickupable(false), rotatable(false),
+ 	useable(false), moveable(false), alwaysOnTop(false), canReadText(false),
+ 	canWriteText(false), isVertical(false), isHorizontal(false), isHangable(false),
+ 	allowDistRead(false), lookThrough(false), stopTime(false), showCount(true)
 {
-}
+	}
 
 Items::Items()
 {
@@ -136,10 +136,10 @@ FILELOADER_ERRORS Items::loadFromOtb(const std::string& file)
 	} else if (Items::dwMajorVersion != 3) {
 		std::cout << "Old version detected, a newer version of items.otb is required." << std::endl;
 		return ERROR_INVALID_FORMAT;
-	} /*else if (Items::dwMinorVersion < CLIENT_VERSION_1076) {
+	} else if (Items::dwMinorVersion < CLIENT_VERSION_1076) {
 		std::cout << "A newer version of items.otb is required." << std::endl;
 		return ERROR_INVALID_FORMAT;
-	}*/
+	}
 
 	node = f.getChildNode(node, type);
 	while (node != NO_NODE) {
@@ -359,9 +359,32 @@ bool Items::loadFromXml()
 			parseItemNode(itemNode, id++);
 		}
 	}
+	buildInventoryList();
 	return true;
 }
 
+void Items::buildInventoryList()
+ {
+ 	inventory.reserve(30000);
+ 	for(const auto &type: items) {
+ 		if(type.weaponType != WEAPON_NONE || type.ammoType != AMMO_NONE ||
+ 			type.attack != 0 || type.defense != 0 ||
+ 			type.extraDefense != 0 || type.armor != 0 ||
+ 			(type.slotPosition & SLOTP_NECKLACE) == SLOTP_NECKLACE ||
+ 			(type.slotPosition & SLOTP_RING) == SLOTP_RING ||
+ 			(type.slotPosition & SLOTP_AMMO) == SLOTP_AMMO ||
+ 			(type.slotPosition & SLOTP_FEET) == SLOTP_FEET ||
+ 			(type.slotPosition & SLOTP_HEAD) == SLOTP_HEAD ||
+ 			(type.slotPosition & SLOTP_ARMOR) == SLOTP_ARMOR ||
+ 			(type.slotPosition & SLOTP_LEGS) == SLOTP_LEGS)
+ 		{
+ 			inventory.push_back(type.clientId);
+ 		}
+ 	}
+ 	inventory.shrink_to_fit();
+ 	std::sort(inventory.begin(), inventory.end());
+ }
+ 
 void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 {
 	if (id > 30000 && id < 30100) {
@@ -415,7 +438,7 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			} else if (tmpStrValue == "depot") {
 				it.type = ITEM_TYPE_DEPOT;
 			} else if (tmpStrValue == "rewardchest") {
-				it.type = ITEM_TYPE_REWARDCHEST;
+ 				it.type = ITEM_TYPE_REWARDCHEST;
 			} else if (tmpStrValue == "mailbox") {
 				it.type = ITEM_TYPE_MAILBOX;
 			} else if (tmpStrValue == "trashholder") {
@@ -462,15 +485,15 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			} else if (tmpStrValue == "north") {
 				it.floorChange = TILESTATE_FLOORCHANGE_NORTH;
 			} else if (tmpStrValue == "south") {
-				it.floorChange = TILESTATE_FLOORCHANGE_SOUTH;
-			} else if (tmpStrValue == "southalt") {
-				it.floorChange = TILESTATE_FLOORCHANGE_SOUTH_ALT;
+			    it.floorChange = TILESTATE_FLOORCHANGE_SOUTH;
+ 			} else if (tmpStrValue == "southalt") {
+ 				it.floorChange = TILESTATE_FLOORCHANGE_SOUTH_ALT;
 			} else if (tmpStrValue == "west") {
 				it.floorChange = TILESTATE_FLOORCHANGE_WEST;
 			} else if (tmpStrValue == "east") {
-				it.floorChange = TILESTATE_FLOORCHANGE_EAST;
-			} else if (tmpStrValue == "eastalt") {
-				it.floorChange = TILESTATE_FLOORCHANGE_EAST_ALT;
+			    it.floorChange = TILESTATE_FLOORCHANGE_EAST;
+ 			} else if (tmpStrValue == "eastalt") {
+ 				it.floorChange = TILESTATE_FLOORCHANGE_EAST_ALT;
 			} else {
 				std::cout << "[Warning - Items::parseItemNode] Unknown floorChange: " << valueAttribute.as_string() << std::endl;
 			}
@@ -670,6 +693,18 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
 			it.getAbilities().skills[SKILL_SHIELD] = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "skillfist") {
 			it.getAbilities().skills[SKILL_FIST] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatcriticalchance") {
+			it.getAbilities().skillStats[SKILL_CRITICAL_HIT_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatcriticaldamage") {
+			it.getAbilities().skillStats[SKILL_CRITICAL_HIT_DAMAGE] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatlifeleechchance") {
+			it.getAbilities().skillStats[SKILL_LIFE_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatlifeleechdamage") {
+			it.getAbilities().skillStats[SKILL_LIFE_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatmanaleechchance") {
+			it.getAbilities().skillStats[SKILL_MANA_LEECH_CHANCE] = pugi::cast<int32_t>(valueAttribute.value());
+		} else if (tmpStrValue == "skillstatmanaleechdamage") {
+			it.getAbilities().skillStats[SKILL_MANA_LEECH_AMOUNT] = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "maxhitpoints") {
 			it.getAbilities().stats[STAT_MAXHITPOINTS] = pugi::cast<int32_t>(valueAttribute.value());
 		} else if (tmpStrValue == "maxhitpointspercent") {

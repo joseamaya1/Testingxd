@@ -55,11 +55,11 @@ enum ItemTypes_t {
 	ITEM_TYPE_KEY,
 	ITEM_TYPE_RUNE,
 	ITEM_TYPE_REWARDCHEST,
-	ITEM_TYPE_LAST,
+ 	ITEM_TYPE_LAST,	
 };
 
 struct Abilities {
-	Abilities() : stats(), statsPercent(), skills(), fieldAbsorbPercent(), absorbPercent() {
+	Abilities() : stats(), statsPercent(), skills(), skillStats(), fieldAbsorbPercent(), absorbPercent() {
 		elementType = COMBAT_NONE;
 		elementDamage = 0;
 
@@ -91,7 +91,7 @@ struct Abilities {
 
 	//extra skill modifiers
 	int32_t skills[SKILL_LAST + 1];
-
+	int32_t skillStats[SKILLSTAT_LAST + 1];
 	int32_t speed;
 
 	// field damage abilities modifiers
@@ -152,8 +152,8 @@ class ItemType
 			return (type == ITEM_TYPE_DEPOT);
 		}
 		bool isRewardChest() const {
-			return (type == ITEM_TYPE_REWARDCHEST);
-		}
+ 			return (type == ITEM_TYPE_REWARDCHEST);
+ 		}
 		bool isMailbox() const {
 			return (type == ITEM_TYPE_MAILBOX);
 		}
@@ -314,7 +314,10 @@ class Items
 
 		bool loadFromXml();
 		void parseItemNode(const pugi::xml_node& itemNode, uint16_t id);
-
+		
+		void buildInventoryList();
+ 		const std::vector<uint16_t>& getInventory() const { return inventory; }
+ 
 		inline size_t size() const {
 			return items.size();
 		}
@@ -322,5 +325,6 @@ class Items
 	protected:
 		std::map<uint16_t, uint16_t> reverseItemMap;
 		std::vector<ItemType> items;
+		std::vector<uint16_t> inventory;
 };
 #endif

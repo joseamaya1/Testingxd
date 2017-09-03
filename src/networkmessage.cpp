@@ -23,6 +23,10 @@
 
 #include "container.h"
 #include "creature.h"
+#include "player.h"
+
+#include "position.h"
+#include "rsa.h"
 
 std::string NetworkMessage::getString(uint16_t stringLen/* = 0*/)
 {

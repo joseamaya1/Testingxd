@@ -57,6 +57,13 @@ class Guild
 		GuildRank* getRankById(uint32_t id);
 		const GuildRank* getRankByLevel(uint8_t level) const;
 		void addRank(uint32_t id, const std::string& name, uint8_t level);
+		
+		uint32_t getBankBalance() const {
+        return balance;
+        }
+         void setBankBalance(uint32_t _balance) {
+        balance = _balance;
+        }
 
 		const std::string& getMotd() const {
 			return motd;
@@ -70,6 +77,7 @@ class Guild
 		std::vector<GuildRank> ranks;
 		std::string name;
 		std::string motd;
+		uint32_t balance;
 		uint32_t id;
 		uint32_t memberCount;
 };

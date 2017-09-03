@@ -36,7 +36,6 @@ class ConfigManager
 			FREE_PREMIUM,
 			REPLACE_KICK_ON_LOGIN,
 			ALLOW_CLONES,
-			ALLOW_WALKTHROUGH,
 			BIND_ONLY_GLOBAL_ADDRESS,
 			OPTIMIZE_DATABASE,
 			MARKET_PREMIUM,
@@ -106,8 +105,11 @@ class ConfigManager
 			MAX_MARKET_OFFERS_AT_A_TIME_PER_PLAYER,
 			EXP_FROM_PLAYERS_LEVEL_RANGE,
 			MAX_PACKETS_PER_SECOND,
+			FREE_DEPOT_LIMIT,
+   PREMIUM_DEPOT_LIMIT,
+   DEPOT_BOXES,
 			LIVE_CAST_PORT,
-			STORE_COIN_PACKET,
+			STORE_COINS_PACKET_SIZE, 
 
 			LAST_INTEGER_CONFIG /* this must be the last one */
 		};
@@ -115,14 +117,14 @@ class ConfigManager
 		bool load();
 		bool reload();
 
-		const std::string& getString(string_config_t what) const;
-		int32_t getNumber(integer_config_t what) const;
-		bool getBoolean(boolean_config_t what) const;
+		const std::string& getString(string_config_t _what) const;
+		int32_t getNumber(integer_config_t _what) const;
+		bool getBoolean(boolean_config_t _what) const;
 
 	private:
-		static std::string getGlobalString(lua_State* L, const char* identifier, const char* defaultValue);
-		static int32_t getGlobalNumber(lua_State* L, const char* identifier, const int32_t defaultValue = 0);
-		static bool getGlobalBoolean(lua_State* L, const char* identifier, const bool defaultValue);
+		static std::string getGlobalString(lua_State* L, const char* identifier, const char* _default);
+		static int32_t getGlobalNumber(lua_State* L, const char* identifier, const int32_t _default = 0);
+		static bool getGlobalBoolean(lua_State* L, const char* identifier, const bool _default);
 
 		std::string string[LAST_STRING_CONFIG];
 		int32_t integer[LAST_INTEGER_CONFIG];

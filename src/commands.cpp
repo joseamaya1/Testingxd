@@ -35,7 +35,7 @@
 #include "monster.h"
 #include "scheduler.h"
 #include "events.h"
-#include "modules.h"
+ #include "store.h"
 
 #include "pugicast.h"
 
@@ -51,8 +51,8 @@ extern CreatureEvents* g_creatureEvents;
 extern GlobalEvents* g_globalEvents;
 extern Events* g_events;
 extern Chat* g_chat;
+extern Store* g_store;
 extern LuaEnvironment g_luaEnvironment;
-extern Modules* g_modules;
 
 s_defcommands Commands::defined_commands[] = {
 	// TODO: move all commands to talkactions
@@ -67,9 +67,19 @@ s_defcommands Commands::defined_commands[] = {
 
 Commands::Commands()
 {
-	// set up command map
+	loaded = false;
+
+	//setup command map
 	for (uint32_t i = 0; i < sizeof(defined_commands) / sizeof(defined_commands[0]); i++) {
-		commandMap[defined_commands[i].name] = new Command(defined_commands[i].f, 1, ACCOUNT_TYPE_GOD, true);
+		Command* cmd = new Command;
+		cmd->loadedGroupId = false;
+		cmd->loadedAccountType = false;
+		cmd->loadedLogging = false;
+		cmd->logged = true;
+		cmd->groupId = 1;
+		cmd->f = defined_commands[i].f;
+		std::string key = defined_commands[i].name;
+		commandMap[key] = cmd;
 	}
 }
 
@@ -89,6 +99,8 @@ bool Commands::loadFromXml()
 		return false;
 	}
 
+	loaded = true;
+
 	for (auto commandNode : doc.child("commands").children()) {
 		pugi::xml_attribute cmdAttribute = commandNode.attribute("cmd");
 		if (!cmdAttribute) {
@@ -106,36 +118,66 @@ bool Commands::loadFromXml()
 
 		pugi::xml_attribute groupAttribute = commandNode.attribute("group");
 		if (groupAttribute) {
-			command->groupId = pugi::cast<uint32_t>(groupAttribute.value());
-		} else {
-			std::cout << "[Warning - Commands::loadFromXml] Missing group for command " << it->first << std::endl;
+			if (!command->loadedGroupId) {
+				command->groupId = pugi::cast<uint32_t>(groupAttribute.value());
+				command->loadedGroupId = true;
+			} else {
+				std::cout << "[Notice - Commands::loadFromXml] Duplicate command: " << it->first << std::endl;
+			}
 		}
 
 		pugi::xml_attribute acctypeAttribute = commandNode.attribute("acctype");
 		if (acctypeAttribute) {
-			command->accountType = static_cast<AccountType_t>(pugi::cast<uint32_t>(acctypeAttribute.value()));
-		} else {
-			std::cout << "[Warning - Commands::loadFromXml] Missing acctype for command " << it->first << std::endl;
+			if (!command->loadedAccountType) {
+				command->accountType = static_cast<AccountType_t>(pugi::cast<uint32_t>(acctypeAttribute.value()));
+				command->loadedAccountType = true;
+			} else {
+				std::cout << "[Notice - Commands::loadFromXml] Duplicate command: " << it->first << std::endl;
+			}
 		}
 
 		pugi::xml_attribute logAttribute = commandNode.attribute("log");
 		if (logAttribute) {
-			command->log = booleanString(logAttribute.as_string());
-		} else {
-			std::cout << "[Warning - Commands::loadFromXml] Missing log for command " << it->first << std::endl;
+			if (!command->loadedLogging) {
+				command->logged = booleanString(logAttribute.as_string());
+				command->loadedLogging = true;
+			} else {
+				std::cout << "[Notice - Commands::loadFromXml] Duplicate log tag for: " << it->first << std::endl;
+			}
 		}
-		g_game.addCommandTag(it->first.front());
 	}
-	return true;
+
+	for (const auto& it : commandMap) {
+		Command* command = it.second;
+		if (!command->loadedGroupId) {
+			std::cout << "[Warning - Commands::loadFromXml] Missing group id for command " << it.first << std::endl;
+		}
+
+		if (!command->loadedAccountType) {
+			std::cout << "[Warning - Commands::loadFromXml] Missing acctype level for command " << it.first << std::endl;
+		}
+
+		if (!command->loadedLogging) {
+			std::cout << "[Warning - Commands::loadFromXml] Missing log command " << it.first << std::endl;
+		}
+
+		g_game.addCommandTag(it.first.front());
+	}
+	return loaded;
 }
 
 bool Commands::reload()
 {
+	loaded = false;
+
 	for (const auto& it : commandMap) {
 		Command* command = it.second;
 		command->groupId = 1;
 		command->accountType = ACCOUNT_TYPE_GOD;
-		command->log = true;
+		command->loadedGroupId = false;
+		command->loadedAccountType = false;
+		command->logged = true;
+		command->loadedLogging = false;
 	}
 
 	g_game.resetCommandTag();
@@ -174,7 +216,7 @@ bool Commands::exeCommand(Player& player, const std::string& cmd)
 	CommandFunc cfunc = command->f;
 	(this->*cfunc)(player, str_param);
 
-	if (command->log) {
+	if (command->logged) {
 		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_RED, cmd);
 
 		std::ostringstream logFile;
@@ -198,65 +240,65 @@ void Commands::reloadInfo(Player& player, const std::string& param)
 	std::string tmpParam = asLowerCaseString(param);
 	if (tmpParam == "action" || tmpParam == "actions") {
 		g_actions->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Actions.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded actions.");
 	} else if (tmpParam == "config" || tmpParam == "configuration") {
 		g_config.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Config.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded config.");
 	} else if (tmpParam == "command" || tmpParam == "commands") {
 		reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Commands.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded commands.");
 	} else if (tmpParam == "creaturescript" || tmpParam == "creaturescripts") {
 		g_creatureEvents->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Creature scripts.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded creature scripts.");
 	} else if (tmpParam == "monster" || tmpParam == "monsters") {
 		g_monsters.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Monsters.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded monsters.");
 	} else if (tmpParam == "move" || tmpParam == "movement" || tmpParam == "movements"
 	           || tmpParam == "moveevents" || tmpParam == "moveevent") {
 		g_moveEvents->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Movements.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded movements.");
 	} else if (tmpParam == "npc" || tmpParam == "npcs") {
 		Npcs::reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Npcs.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded npcs.");
 	} else if (tmpParam == "raid" || tmpParam == "raids") {
 		g_game.raids.reload();
 		g_game.raids.startup();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Raids.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded raids.");
 	} else if (tmpParam == "spell" || tmpParam == "spells") {
 		g_spells->reload();
 		g_monsters.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Spells.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded spells.");
 	} else if (tmpParam == "talk" || tmpParam == "talkaction" || tmpParam == "talkactions") {
 		g_talkActions->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Talk actions.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded talk actions.");
 	} else if (tmpParam == "items") {
 		Item::items.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Items.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded items.");
 	} else if (tmpParam == "weapon" || tmpParam == "weapons") {
 		g_weapons->reload();
 		g_weapons->loadDefaults();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Weapons.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded weapons.");
 	} else if (tmpParam == "quest" || tmpParam == "quests") {
 		g_game.quests.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Quests.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded quests.");
 	} else if (tmpParam == "mount" || tmpParam == "mounts") {
 		g_game.mounts.reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Mounts.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded mounts.");
 	} else if (tmpParam == "globalevents" || tmpParam == "globalevent") {
 		g_globalEvents->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Globalevents.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded globalevents.");
 	} else if (tmpParam == "events") {
 		g_events->load();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Events.");
-	} else if (tmpParam == "modules") {
-		g_modules->reload();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Modules.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded events.");
 	} else if (tmpParam == "chat" || tmpParam == "channel" || tmpParam == "chatchannels") {
 		g_chat->load();
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Chatchannels.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded chatchannels.");
 	} else if (tmpParam == "global") {
 		g_luaEnvironment.loadFile("data/global.lua");
-		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded Global.lua.");
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded global.lua.");
+	} else if (tmpParam == "store") {
+		g_store->reload();
+		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reloaded store.");
 	} else {
 		player.sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE, "Reload type not found.");
 	}

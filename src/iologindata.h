@@ -63,8 +63,8 @@ class IOLoginData
 	protected:
 		typedef std::map<uint32_t, std::pair<Item*, uint32_t>> ItemMap;
 
-		static void loadItems(ItemMap& itemMap, DBResult_ptr result);
-		static bool saveItems(const Player* player, const ItemBlockList& itemList, DBInsert& query_insert, PropWriteStream& stream);
+		static void loadItems(ItemMap& itemMap, DBResult_ptr result); 
+		static bool saveItems(const Player* player, const ItemBlockList& itemList, DBInsert& query_insert, PropWriteStream& stream, const int32_t limit = -1);
 };
 
 #endif
